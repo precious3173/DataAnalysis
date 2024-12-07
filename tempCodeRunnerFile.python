@@ -1,47 +1,23 @@
-import sqlite3
+import requests
+from bs4 import BeautifulSoup
 
 
-connection = sqlite3.connect("user_data.db")
+url = "https://punchng.com/heritage-energy-empowers-oml30-contractors-with-capacity-building-workshop/#google_vignette"
+response = requests.get(url)
 
-cursor = connection.cursor()
+soup = BeautifulSoup(response.text, "html.parser")
 
-print("Database connected successfully!")
+titles = soup.find_all('h1')
+titles2 = soup.find_all('h2')
 
-create_table_query = """
-CREATE TABLE IF NOT EXISTS users(
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-   name TEXT NOT NULL,
-   age INTEGER,
-   email TEXT UNIQUE
-);
-"""
-cursor.execute(create_table_query)
+print(titles2)
 
+for title in titles:
+   h1= title.text.strip()
+   print(h1)
+   print()
 
-print("Table created successfully.")
-
-insert_query = """
-INSERT OR IGNORE INTO users (name, age, email)
-VALUES ('Alice', 25, 'alice@example.com');
-"""
-
-cursor.execute(insert_query)
-print("User added successfully!")
-
-update_query = """
-UPDATE users
-SET age = 26
-WHERE name = 'Alice'
-"""
-cursor.execute(update_query)
-
-select_query = "SELECT* FROM users;"
-
-cursor.execute(select_query)
-rows = cursor.fetchall()
-
-for row in rows:
-    print(row)
-
-connection.commit()
-connection.close()    
+for title in titles2:
+   h2= title.text.strip()
+   print(h2)
+   print()
