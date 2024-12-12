@@ -1,38 +1,58 @@
-import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.datasets import load_digits
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 
-data = np.array([
-    [1, 50, 0],
-    [2, 60, 0],
-    [3, 65, 0],
-    [4, 70, 0],
-    [5, 75, 1],
-    [6, 80, 1],
-    [7, 85, 1],
-    [8, 90, 1],
-    [9, 95, 1],
-    [10,100, 1],
-    ])
+data = {
+    "size":[ 1400, 1600, 1700, 1875, 1100, 1550, 2350 ],
+    "num_rooms": [3, 4, 4, 5, 2, 3, 5],
+    "location": ["lagos", "rivers", "ondo", "lagos", "rivers", "lagos", "ondo"],
+    "price": [300000, 450000, 550000, 620000, 200000, 480000, 750000]
+}
+    
+df = pd.DataFrame(data)
 
-X = data[:, :2]
-y = data[:, 2]
+features = df[['size', 'num_rooms', 'location']]
+target = df['price']
 
-X_train, X_test, y_train, y_test= train_test_split(X, y, test_size= 0.2, random_state= 12)
-model = RandomForestClassifier()
+features = pd.get_dummies(features, columns= ['location'])
+scalar = StandardScaler()
+features_scaled = scalar.fit_transform(features)
 
-model.fit(X_train, y_train)
+target_binary = (target > 500000).astype(int)
 
-y_pred = model.predict(X_test)
+X_train, X_test, y_train, y_test= train_test_split(features_scaled, target_binary, test_size= 0.2, random_state= 12)
 
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred)
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    tf.keras.layers.Dense(32, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')  # Sigmoid for binary classification
+])
 
-print ("Accuracy", accuracy)
-print("\nClassification Report:\n", report)
+model.compile(optimizer = 'adam',
+              loss ='binary_crossentropy',
+              metrics = ['accuracy'])
 
-new_data = np.array([[7, 80], [3, 50]])  # Example: [Hours_Studied, Attendance]
-predictions = model.predict(new_data)
-print("\nPredictions for new data:", predictions)
+model.fit(X_train, y_train, epochs = 10, batch_size = 4,
+          validation_split=0.2)
+
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy {accuracy * 100:.2f}%")
+
+predictions = model.predict(X_test)
+predictions_binary = (predictions > 0.5).astype(int)
+
+
+results = pd.DataFrame({
+    'Actual': y_test.values,
+    'Predicted': predictions_binary.flatten()
+})
+print(results)
